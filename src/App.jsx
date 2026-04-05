@@ -1,11 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { toPng } from 'html-to-image';
 
 export default function App() {
-  // Estados de Colores y Textos
-  const [primaryColor, setPrimaryColor] = useState('#0a1945');
-  const [secondaryColor, setSecondaryColor] = useState('#1e3a8a');
-  const [gradientDirection, setGradientDirection] = useState('to right');
-  const [isGradient, setIsGradient] = useState(true);
+  // --- ESTADOS DE CONTENIDO ---
   const [headlineMain, setHeadlineMain] = useState('¡Cobertura completa');
   const [headlineHighlight, setHeadlineHighlight] = useState('para tu viaje!');
   const [discountValue, setDiscountValue] = useState('45');
@@ -14,18 +11,22 @@ export default function App() {
   const [ctaText, setCtaText] = useState('¡VER BENEFICIO!');
   const [ctaColor, setCtaColor] = useState('#051130');
   
-  // Estados de Imágenes (Base64 para evitar errores de descarga)
-  const [logoCount, setLogoCount] = useState(1);
-  const [logoUrl, setLogoUrl] = useState('');
-  const [logoUrl2, setLogoUrl2] = useState('');
-  const [bgImageUrl, setBgImageUrl] = useState('');
-  
-  // Estados de Diseño
+  // --- ESTADOS DE COLOR Y DISEÑO ---
+  const [primaryColor, setPrimaryColor] = useState('#0a1945');
+  const [secondaryColor, setSecondaryColor] = useState('#1e3a8a');
+  const [isGradient, setIsGradient] = useState(true);
+  const [gradientDirection, setGradientDirection] = useState('to right');
   const [cutStyle, setCutStyle] = useState('diagonal-right');
   const [layoutDirection, setLayoutDirection] = useState('left');
   const [edgeEffect, setEdgeEffect] = useState('none');
 
-  // Encuadre Foto
+  // --- ESTADOS DE IMÁGENES (Base64) ---
+  const [bgImageUrl, setBgImageUrl] = useState('');
+  const [logoUrl, setLogoUrl] = useState('');
+  const [logoUrl2, setLogoUrl2] = useState('');
+  const [logoCount, setLogoCount] = useState(1);
+
+  // --- ENCUADRE ---
   const [desktopBgZoom, setDesktopBgZoom] = useState(1);
   const [desktopBgPosX, setDesktopBgPosX] = useState(75);
   const [desktopBgPosY, setDesktopBgPosY] = useState(50);
@@ -36,9 +37,8 @@ export default function App() {
   const [framingMode, setFramingMode] = useState('desktop');
   const [previewMode, setPreviewMode] = useState('desktop'); 
   const [downloadingFormat, setDownloadingFormat] = useState(null);
-  const [libReady, setLibReady] = useState(false);
 
-  // Convertir imágenes a Base64 para evitar bloqueos del navegador al descargar
+  // Función para convertir imágenes externas a Base64 y evitar errores de CORS
   const convertToBase64 = async (url) => {
     try {
       const response = await fetch(url);
@@ -51,6 +51,7 @@ export default function App() {
     } catch (e) { return url; }
   };
 
+  // Carga inicial de ejemplos
   useEffect(() => {
     const loadDefaults = async () => {
       const bg = await convertToBase64('[https://images.unsplash.com/photo-1499793983690-e29da59ef1c2?auto=format&fit=crop&w=1000&q=80](https://images.unsplash.com/photo-1499793983690-e29da59ef1c2?auto=format&fit=crop&w=1000&q=80)');
@@ -61,27 +62,28 @@ export default function App() {
       setLogoUrl2(l2);
     };
     loadDefaults();
-
-    const script = document.createElement('script');
-    script.src = '[https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.min.js](https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.min.js)';
-    script.async = true;
-    script.onload = () => setLibReady(true);
-    document.body.appendChild(script);
   }, []);
 
+  // Función de descarga optimizada para Vercel
   const handleDownload = async (format) => {
-    if (!window.htmlToImage) return;
     const node = document.getElementById(`banner-node-${format}`);
     if (!node) return;
     setDownloadingFormat(format);
     try {
-      const dataUrl = await window.htmlToImage.toPng(node, { pixelRatio: 2, backgroundColor: '#ffffff' });
+      const dataUrl = await toPng(node, { 
+        pixelRatio: 2, 
+        backgroundColor: '#ffffff',
+        cacheBust: true 
+      });
       const link = document.createElement('a');
-      link.download = `banner-${format}-${Date.now()}.png`;
+      link.download = `banner-bonda-${format}.png`;
       link.href = dataUrl;
       link.click();
-    } catch (err) { alert('Error al generar imagen. Prueba subiendo tus fotos locales.'); }
-    finally { setDownloadingFormat(null); }
+    } catch (err) { 
+      alert('Error al generar imagen. Si usas fotos de internet, intenta subirlas desde tu computadora.'); 
+    } finally { 
+      setDownloadingFormat(null); 
+    }
   };
 
   const handleFileUpload = (e, setter) => {
@@ -109,10 +111,12 @@ export default function App() {
   const getEdgeFilter = () => {
     if (edgeEffect === 'none') return 'none';
     const dir = layoutDirection === 'left' ? 1 : -1;
-    if (edgeEffect === 'shadow') return `drop-shadow(${dir * 8}px 0px 12px rgba(0,0,0,0.5))`;
-    if (edgeEffect === 'glow') return `drop-shadow(${dir * 2}px 0px 10px rgba(255,255,255,0.6))`;
-    if (edgeEffect === 'solid-white') return `drop-shadow(${dir * 4}px 0px 0px #ffffff)`;
-    return 'none';
+    const shadowMap = {
+      'shadow': `drop-shadow(${dir * 8}px 0px 12px rgba(0,0,0,0.5))`,
+      'glow': `drop-shadow(${dir * 2}px 0px 10px rgba(255,255,255,0.6))`,
+      'solid-white': `drop-shadow(${dir * 4}px 0px 0px #ffffff)`
+    };
+    return shadowMap[edgeEffect] || 'none';
   };
 
   const renderSubtextLines = (text) => {
@@ -129,102 +133,126 @@ export default function App() {
   return (
     <div className="min-h-screen bg-gray-50 p-4 md:p-8 font-sans text-gray-800">
       <div className="max-w-7xl mx-auto">
-        <header className="mb-8 border-b pb-4 flex justify-between items-center">
-          <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Generador de Banners</h1>
-            <p className="text-gray-500 text-sm">Crea piezas gráficas para Desktop y Mobile en segundos.</p>
-          </div>
+        <header className="mb-8 border-b pb-4">
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-900 tracking-tight">Generador de Banners</h1>
+          <p className="text-gray-500 text-sm mt-1">Crea piezas para Desktop y Mobile en segundos.</p>
         </header>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           {/* PANEL DE CONTROLES */}
           <div className="lg:col-span-4 bg-white p-6 rounded-2xl shadow-sm border border-gray-100 space-y-6 overflow-y-auto max-h-[85vh]">
             <section>
-              <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Contenido</h3>
+              <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-4">1. Contenido del Banner</h3>
               <div className="space-y-3">
-                <input type="text" value={headlineMain} onChange={(e) => setHeadlineMain(e.target.value)} className="w-full p-2 text-sm border rounded-lg" placeholder="Título" />
-                <input type="text" value={headlineHighlight} onChange={(e) => setHeadlineHighlight(e.target.value)} className="w-full p-2 text-sm border rounded-lg" placeholder="Título Cursiva" />
-                
-                <div className="flex items-center justify-between py-2 border-t mt-2">
-                  <span className="text-sm font-medium">Descuento</span>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input type="checkbox" checked={showPercentOff} onChange={() => setShowPercentOff(!showPercentOff)} className="sr-only peer" />
-                    <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
-                    <span className="ml-2 text-xs font-medium text-gray-500">% OFF</span>
-                  </label>
+                <div>
+                  <label className="text-[10px] font-bold text-gray-500 mb-1 block">Títulos</label>
+                  <input type="text" value={headlineMain} onChange={(e) => setHeadlineMain(e.target.value)} className="w-full p-2 text-sm border rounded-lg mb-2 focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Título principal" />
+                  <input type="text" value={headlineHighlight} onChange={(e) => setHeadlineHighlight(e.target.value)} className="w-full p-2 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Subtítulo (cursiva)" />
                 </div>
                 
-                <div className="grid grid-cols-3 gap-2">
-                  <input type="text" value={discountValue} onChange={(e) => setDiscountValue(e.target.value)} className="p-2 border rounded-lg text-center font-bold" />
-                  <textarea value={discountSubtext} onChange={(e) => setDiscountSubtext(e.target.value)} className="col-span-2 p-2 text-xs border rounded-lg" rows="2" placeholder="Subtexto" />
+                <div className="pt-2 border-t">
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-[10px] font-bold text-gray-500 block">Descuento</label>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input type="checkbox" checked={showPercentOff} onChange={() => setShowPercentOff(!showPercentOff)} className="sr-only peer" />
+                      <div className="w-8 h-4 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-blue-600"></div>
+                      <span className="ml-2 text-[10px] font-bold text-gray-400">% OFF</span>
+                    </label>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    <input type="text" value={discountValue} onChange={(e) => setDiscountValue(e.target.value)} className="p-2 border rounded-lg text-center font-bold focus:ring-2 focus:ring-blue-500 outline-none" />
+                    <textarea value={discountSubtext} onChange={(e) => setDiscountSubtext(e.target.value)} className="col-span-2 p-2 text-xs border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" rows="2" placeholder="Subtexto (ej: en entradas)" />
+                  </div>
                 </div>
               </div>
             </section>
 
             <section className="border-t pt-4">
-              <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Estilo y Color</h3>
+              <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-4">2. Estilo y Color</h3>
               <div className="grid grid-cols-2 gap-3 mb-3">
-                <input type="color" value={primaryColor} onChange={(e) => setPrimaryColor(e.target.value)} className="w-full h-10 rounded cursor-pointer" />
-                {isGradient && <input type="color" value={secondaryColor} onChange={(e) => setSecondaryColor(e.target.value)} className="w-full h-10 rounded cursor-pointer" />}
+                <div>
+                  <label className="text-[10px] font-bold text-gray-500 block mb-1">Color Base</label>
+                  <input type="color" value={primaryColor} onChange={(e) => setPrimaryColor(e.target.value)} className="w-full h-8 rounded cursor-pointer border-none" />
+                </div>
+                {isGradient && (
+                  <div>
+                    <label className="text-[10px] font-bold text-gray-500 block mb-1">Color Final</label>
+                    <input type="color" value={secondaryColor} onChange={(e) => setSecondaryColor(e.target.value)} className="w-full h-8 rounded cursor-pointer border-none" />
+                  </div>
+                )}
               </div>
               <div className="flex items-center gap-2 mb-4">
-                <input type="checkbox" checked={isGradient} onChange={() => setIsGradient(!isGradient)} id="grad" />
-                <label htmlFor="grad" className="text-xs">Usar Gradiente</label>
+                <input type="checkbox" checked={isGradient} onChange={() => setIsGradient(!isGradient)} id="grad" className="w-4 h-4 rounded text-blue-600" />
+                <label htmlFor="grad" className="text-xs font-medium">Usar Gradiente</label>
               </div>
               
               <div className="grid grid-cols-2 gap-2">
-                <select value={layoutDirection} onChange={(e) => setLayoutDirection(e.target.value)} className="p-2 text-xs border rounded-lg">
-                  <option value="left">Texto Izquierda</option>
-                  <option value="right">Texto Derecha</option>
+                <select value={layoutDirection} onChange={(e) => setLayoutDirection(e.target.value)} className="p-2 text-xs border rounded-lg bg-gray-50 outline-none">
+                  <option value="left">Texto a la Izquierda</option>
+                  <option value="right">Texto a la Derecha</option>
                 </select>
-                <select value={cutStyle} onChange={(e) => setCutStyle(e.target.value)} className="p-2 text-xs border rounded-lg">
-                  <option value="diagonal-right">Diagonal Der.</option>
-                  <option value="diagonal-left">Diagonal Izq.</option>
-                  <option value="straight">Recto</option>
+                <select value={cutStyle} onChange={(e) => setCutStyle(e.target.value)} className="p-2 text-xs border rounded-lg bg-gray-50 outline-none">
+                  <option value="diagonal-right">Diagonal Derecha</option>
+                  <option value="diagonal-left">Diagonal Izquierda</option>
+                  <option value="straight">Corte Recto</option>
                 </select>
               </div>
             </section>
 
             <section className="border-t pt-4">
-              <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Fotos y Encuadre</h3>
-              <input type="file" accept="image/*" onChange={(e) => handleFileUpload(e, setBgImageUrl)} className="w-full text-xs mb-4" />
+              <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-4">3. Imagen y Encuadre</h3>
+              <div className="mb-3">
+                <label className="text-[10px] font-bold text-gray-500 block mb-1">Subir Foto de Fondo</label>
+                <input type="file" accept="image/*" onChange={(e) => handleFileUpload(e, setBgImageUrl)} className="w-full text-xs file:mr-4 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-[10px] file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
+              </div>
               
-              <div className="bg-gray-50 p-3 rounded-xl space-y-3">
+              <div className="bg-gray-50 p-4 rounded-xl space-y-4">
                 <div className="flex justify-between items-center">
                   <span className="text-[10px] font-bold uppercase text-gray-400">Ajustar para:</span>
                   <div className="flex bg-white border rounded overflow-hidden">
-                    <button onClick={() => {setFramingMode('desktop'); setPreviewMode('desktop')}} className={`px-2 py-1 text-[10px] ${framingMode === 'desktop' ? 'bg-blue-600 text-white' : ''}`}>Desktop</button>
-                    <button onClick={() => {setFramingMode('mobile'); setPreviewMode('mobile')}} className={`px-2 py-1 text-[10px] ${framingMode === 'mobile' ? 'bg-blue-600 text-white' : ''}`}>Mobile</button>
+                    <button onClick={() => {setFramingMode('desktop'); setPreviewMode('desktop')}} className={`px-3 py-1 text-[10px] font-bold transition-colors ${framingMode === 'desktop' ? 'bg-blue-600 text-white' : 'text-gray-400'}`}>Desktop</button>
+                    <button onClick={() => {setFramingMode('mobile'); setPreviewMode('mobile')}} className={`px-3 py-1 text-[10px] font-bold transition-colors ${framingMode === 'mobile' ? 'bg-blue-600 text-white' : 'text-gray-400'}`}>Mobile</button>
                   </div>
                 </div>
-                <input type="range" min="0.1" max="3" step="0.05" value={framingMode === 'desktop' ? desktopBgZoom : mobileBgZoom} onChange={(e) => framingMode === 'desktop' ? setDesktopBgZoom(Number(e.target.value)) : setMobileBgZoom(Number(e.target.value))} className="w-full h-1 bg-gray-200 rounded-lg appearance-none" />
-                <input type="range" min="-50" max="150" value={framingMode === 'desktop' ? desktopBgPosX : mobileBgPosX} onChange={(e) => framingMode === 'desktop' ? setDesktopBgPosX(Number(e.target.value)) : setMobileBgPosX(Number(e.target.value))} className="w-full h-1 bg-gray-200 rounded-lg appearance-none" />
-                <input type="range" min="-50" max="150" value={framingMode === 'desktop' ? desktopBgPosY : mobileBgPosY} onChange={(e) => framingMode === 'desktop' ? setDesktopBgPosY(Number(e.target.value)) : setMobileBgPosY(Number(e.target.value))} className="w-full h-1 bg-gray-200 rounded-lg appearance-none" />
+                <div>
+                  <div className="flex justify-between mb-1"><span className="text-[9px] font-bold text-gray-500">ZOOM</span></div>
+                  <input type="range" min="0.1" max="3" step="0.05" value={framingMode === 'desktop' ? desktopBgZoom : mobileBgZoom} onChange={(e) => framingMode === 'desktop' ? setDesktopBgZoom(Number(e.target.value)) : setMobileBgZoom(Number(e.target.value))} className="w-full h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600" />
+                </div>
+                <div>
+                  <div className="flex justify-between mb-1"><span className="text-[9px] font-bold text-gray-500">POSICIÓN H</span></div>
+                  <input type="range" min="-50" max="150" value={framingMode === 'desktop' ? desktopBgPosX : mobileBgPosX} onChange={(e) => framingMode === 'desktop' ? setDesktopBgPosX(Number(e.target.value)) : setMobileBgPosX(Number(e.target.value))} className="w-full h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600" />
+                </div>
+                <div>
+                  <div className="flex justify-between mb-1"><span className="text-[9px] font-bold text-gray-500">POSICIÓN V</span></div>
+                  <input type="range" min="-50" max="150" value={framingMode === 'desktop' ? desktopBgPosY : mobileBgPosY} onChange={(e) => framingMode === 'desktop' ? setDesktopBgPosY(Number(e.target.value)) : setMobileBgPosY(Number(e.target.value))} className="w-full h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600" />
+                </div>
               </div>
             </section>
 
             <section className="border-t pt-4">
-              <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Logos Partner</h3>
-              <select value={logoCount} onChange={(e) => setLogoCount(Number(e.target.value))} className="w-full p-2 text-xs border rounded-lg mb-3">
-                <option value={1}>1 Logo</option>
-                <option value={2}>2 Logos</option>
-              </select>
-              <input type="file" onChange={(e) => handleFileUpload(e, setLogoUrl)} className="w-full text-xs mb-2" />
-              {logoCount === 2 && <input type="file" onChange={(e) => handleFileUpload(e, setLogoUrl2)} className="w-full text-xs" />}
+              <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-4">4. Logos del Partner</h3>
+              <div className="flex gap-2 mb-3">
+                <button onClick={() => setLogoCount(1)} className={`flex-1 py-1 text-[10px] font-bold border rounded-md transition-colors ${logoCount === 1 ? 'bg-blue-50 border-blue-200 text-blue-700' : 'bg-white text-gray-400'}`}>1 LOGO</button>
+                <button onClick={() => setLogoCount(2)} className={`flex-1 py-1 text-[10px] font-bold border rounded-md transition-colors ${logoCount === 2 ? 'bg-blue-50 border-blue-200 text-blue-700' : 'bg-white text-gray-400'}`}>2 LOGOS</button>
+              </div>
+              <div className="space-y-2">
+                <input type="file" onChange={(e) => handleFileUpload(e, setLogoUrl)} className="w-full text-xs" />
+                {logoCount === 2 && <input type="file" onChange={(e) => handleFileUpload(e, setLogoUrl2)} className="w-full text-xs border-t pt-2" />}
+              </div>
             </section>
           </div>
 
-          {/* VISTA PREVIA */}
+          {/* ÁREA DE PREVISUALIZACIÓN */}
           <div className="lg:col-span-8 space-y-6">
             <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
               <div className="flex bg-gray-100 p-1 rounded-xl">
                 {['desktop', 'mobile', 'both'].map(m => (
-                  <button key={m} onClick={() => {setPreviewMode(m); if(m !== 'both') setFramingMode(m)}} className={`px-4 py-1.5 rounded-lg text-xs font-bold capitalize transition-all ${previewMode === m ? 'bg-white shadow text-blue-600' : 'text-gray-500'}`}>{m === 'both' ? 'Ambos' : m}</button>
+                  <button key={m} onClick={() => {setPreviewMode(m); if(m !== 'both') setFramingMode(m)}} className={`px-6 py-2 rounded-lg text-xs font-bold capitalize transition-all ${previewMode === m ? 'bg-white shadow-sm text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}>{m === 'both' ? 'Ver Ambos' : m}</button>
                 ))}
               </div>
             </div>
 
-            <div className="space-y-10 pb-20">
+            <div className="space-y-12 pb-20">
               {(previewMode === 'both' ? ['desktop', 'mobile'] : [previewMode]).map(type => {
                 const isMobile = type === 'mobile';
                 const zoom = isMobile ? mobileBgZoom : desktopBgZoom;
@@ -232,62 +260,76 @@ export default function App() {
                 const py = isMobile ? mobileBgPosY : desktopBgPosY;
 
                 return (
-                  <div key={type} className="space-y-3">
-                    <div className="flex justify-between items-end px-2">
-                      <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{isMobile ? 'Mobile 984x450' : 'Desktop 1000x300'}</span>
-                      <button onClick={() => handleDownload(type)} disabled={downloadingFormat === type} className="bg-green-600 hover:bg-green-700 text-white text-[10px] font-bold px-4 py-2 rounded-lg shadow-lg disabled:opacity-50">
-                        {downloadingFormat === type ? 'GENERANDO...' : 'DESCARGAR PNG'}
+                  <div key={type} className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                    <div className="flex justify-between items-center px-2 mb-3">
+                      <div className="flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{isMobile ? 'Mobile: 984 x 450 px' : 'Desktop: 1000 x 300 px'}</span>
+                      </div>
+                      <button onClick={() => handleDownload(type)} disabled={downloadingFormat === type} className="group relative bg-green-600 hover:bg-green-700 text-white text-[10px] font-bold px-5 py-2.5 rounded-xl shadow-lg shadow-green-100 transition-all active:scale-95 disabled:opacity-50">
+                        {downloadingFormat === type ? 'PROCESANDO...' : '📥 DESCARGAR BANNER PNG'}
                       </button>
                     </div>
                     
-                    <div className="bg-white rounded-xl shadow-2xl overflow-hidden border">
+                    <div className="bg-white rounded-2xl shadow-2xl overflow-hidden border border-gray-100 border-opacity-50">
                       <div id={`banner-node-${type}`} className="relative w-full overflow-hidden flex bg-gray-100" style={{ aspectRatio: isMobile ? '984/450' : '10/3' }}>
+                        
+                        {/* 1. FONDO FOTOGRÁFICO */}
                         <div className="absolute inset-0">
-                          {bgImageUrl && <img src={bgImageUrl} className="absolute max-w-none" style={{ width: `${zoom * 100}%`, height: 'auto', left: `${px}%`, top: `${py}%`, transform: 'translate(-50%, -50%)' }} />}
+                          {bgImageUrl && <img src={bgImageUrl} alt="Background" className="absolute max-w-none" style={{ width: `${zoom * 100}%`, height: 'auto', left: `${px}%`, top: `${py}%`, transform: 'translate(-50%, -50%)' }} />}
                         </div>
                         
-                        <div className={`absolute top-0 h-full transition-all duration-500 ${layoutDirection === 'left' ? 'left-0' : 'right-0'}`} style={{ width: cutStyle === 'straight' ? 'calc(50% - 30px)' : 'calc(62% - 30px)', filter: getEdgeFilter(), zIndex: 5 }}>
+                        {/* 2. BLOQUE DE COLOR RECORTADO */}
+                        <div className={`absolute top-0 h-full transition-all duration-700 ease-in-out ${layoutDirection === 'left' ? 'left-0' : 'right-0'}`} style={{ width: cutStyle === 'straight' ? 'calc(50% - 30px)' : 'calc(62% - 30px)', filter: getEdgeFilter(), zIndex: 5 }}>
                           <div className="w-full h-full" style={{ background: isGradient ? `linear-gradient(${gradientDirection}, ${primaryColor}, ${secondaryColor})` : primaryColor, clipPath: currentCuts[cutStyle] }}></div>
                         </div>
 
+                        {/* 3. CAPA DE TEXTO Y LOGOS */}
                         <div className={`absolute inset-0 flex z-10 ${layoutDirection === 'right' ? 'flex-row-reverse' : ''}`}>
-                          <div className={`w-[58%] h-full flex flex-col justify-center px-10 text-white ${layoutDirection === 'left' ? 'items-start text-left' : 'items-end text-right'}`}>
-                            <h2 className={`leading-none font-medium mb-4 ${isMobile ? 'text-4xl' : 'text-[2.2rem]'}`}>
+                          
+                          {/* BLOQUE TEXTOS */}
+                          <div className={`w-[58%] h-full flex flex-col justify-center px-8 md:px-12 text-white ${layoutDirection === 'left' ? 'items-start text-left' : 'items-end text-right'}`}>
+                            <h2 className={`leading-[1.1] font-medium mb-4 ${isMobile ? 'text-4xl md:text-5xl' : 'text-[2rem] md:text-[2.5rem]'}`}>
                               {headlineMain} <br/> <span className="italic font-light opacity-90">{headlineHighlight}</span>
                             </h2>
+                            
                             <div className={`flex items-center gap-4 ${layoutDirection === 'right' ? 'flex-row-reverse' : ''}`}>
                               <div className="flex items-start">
-                                <span className={`font-bold tracking-tighter leading-none ${isMobile ? 'text-[5.5rem]' : 'text-[5rem]'}`}>{discountValue}</span>
+                                <span className={`font-bold tracking-tighter leading-none ${isMobile ? 'text-[6rem]' : 'text-[5.5rem]'}`}>{discountValue}</span>
                                 {showPercentOff && (
                                   <div className="flex flex-col ml-1 mt-2 text-left">
                                     <span className="font-bold leading-none text-2xl">%</span>
-                                    <span className="font-bold text-[10px] mt-1">OFF</span>
+                                    <span className="font-bold text-[10px] mt-1 opacity-80 tracking-widest">OFF</span>
                                   </div>
                                 )}
                               </div>
                               <div className={`py-1 flex flex-col justify-center border-white/30 ${layoutDirection === 'right' ? 'border-r-2 pr-4 text-right' : 'border-l-2 pl-4 text-left'}`}>
                                 {renderSubtextLines(discountSubtext).map((l, i) => (
-                                  <span key={i} className={`font-medium leading-none ${isMobile ? 'text-lg' : 'text-base'}`}>{l}</span>
+                                  <span key={i} className={`font-medium leading-none tracking-tight ${isMobile ? 'text-xl' : 'text-base'}`}>{l}</span>
                                 ))}
                               </div>
                             </div>
                           </div>
 
-                          <div className={`w-[42%] h-full flex flex-col justify-center ${layoutDirection === 'left' ? 'items-end pr-10' : 'items-start pl-10'}`}>
-                            <div className={`flex flex-col ${isMobile ? 'gap-6' : 'gap-4'} ${layoutDirection === 'left' ? 'items-end' : 'items-start'}`}>
-                              <div className="flex gap-3">
-                                <div className={`bg-white rounded-2xl shadow-xl flex items-center justify-center p-2 ${isMobile ? (logoCount === 1 ? 'w-36 h-36' : 'w-32 h-32') : 'w-24 h-24'}`}>
-                                  {logoUrl && <img src={logoUrl} className="max-w-full max-h-full object-contain" />}
-                                </div>
+                          {/* BLOQUE LOGOS Y BOTÓN */}
+                          <div className={`w-[42%] h-full flex flex-col justify-center ${layoutDirection === 'left' ? 'items-end pr-8 md:pr-12' : 'items-start pl-8 md:pl-12'}`}>
+                            <div className={`flex flex-col ${isMobile ? 'gap-8' : 'gap-5'} ${layoutDirection === 'left' ? 'items-end' : 'items-start'}`}>
+                              <div className="flex gap-4">
+                                {logoUrl && (
+                                  <div className={`bg-white rounded-3xl shadow-xl flex items-center justify-center p-3 transition-transform hover:scale-105 duration-300 ${isMobile ? (logoCount === 1 ? 'w-40 h-40' : 'w-32 h-32') : 'w-24 h-24'}`}>
+                                    <img src={logoUrl} alt="Logo 1" className="max-w-full max-h-full object-contain" />
+                                  </div>
+                                )}
                                 {logoCount === 2 && logoUrl2 && (
-                                  <div className={`bg-white rounded-2xl shadow-xl flex items-center justify-center p-2 ${isMobile ? 'w-32 h-32' : 'w-24 h-24'}`}>
-                                    <img src={logoUrl2} className="max-w-full max-h-full object-contain" />
+                                  <div className={`bg-white rounded-3xl shadow-xl flex items-center justify-center p-3 transition-transform hover:scale-105 duration-300 ${isMobile ? 'w-32 h-32' : 'w-24 h-24'}`}>
+                                    <img src={logoUrl2} alt="Logo 2" className="max-w-full max-h-full object-contain" />
                                   </div>
                                 )}
                               </div>
-                              <button className={`rounded-full font-bold shadow-xl transition-all ${isMobile ? 'px-10 py-3 text-base' : 'px-8 py-2.5 text-xs'}`} style={{ backgroundColor: ctaColor, color: '#fff' }}>{ctaText}</button>
+                              <button className={`rounded-full font-bold shadow-2xl transition-all active:scale-95 ${isMobile ? 'px-12 py-4 text-lg' : 'px-8 py-2.5 text-[11px] tracking-wider uppercase'}`} style={{ backgroundColor: ctaColor, color: '#fff' }}>{ctaText}</button>
                             </div>
                           </div>
+
                         </div>
                       </div>
                     </div>
