@@ -97,11 +97,10 @@ export default function App() {
       <div className="max-w-7xl mx-auto">
         <header className="mb-8 border-b pb-4">
           <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Generador de Banners</h1>
-          <p className="text-gray-500 text-sm mt-1">Versión Vercel corregida.</p>
+          <p className="text-gray-500 text-sm mt-1">Herramienta de diseño para Bonda.</p>
         </header>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          {/* PANEL CONTROLES */}
           <div className="lg:col-span-4 bg-white p-6 rounded-2xl shadow-sm border border-gray-100 space-y-6 overflow-y-auto max-h-[85vh]">
             <section className="space-y-3">
               <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Contenido</h3>
@@ -123,7 +122,7 @@ export default function App() {
                 <input type="color" value={primaryColor} onChange={(e) => setPrimaryColor(e.target.value)} className="flex-1 h-8 rounded cursor-pointer border-none" />
                 <input type="color" value={secondaryColor} onChange={(e) => setSecondaryColor(e.target.value)} className="flex-1 h-8 rounded cursor-pointer border-none" />
               </div>
-              <select value={layoutDirection} onChange={(e) => setLayoutDirection(e.target.value)} className="w-full p-2 text-xs border rounded-lg">
+              <select value={layoutDirection} onChange={(e) => setLayoutDirection(e.target.value)} className="w-full p-2 text-xs border rounded-lg bg-gray-50">
                 <option value="left">Texto Izquierda</option>
                 <option value="right">Texto Derecha</option>
               </select>
@@ -147,7 +146,6 @@ export default function App() {
             </section>
           </div>
 
-          {/* VISTA PREVIA */}
           <div className="lg:col-span-8 space-y-6">
             <div className="flex bg-gray-100 p-1 rounded-xl w-fit">
               {['desktop', 'mobile'].map(m => (
@@ -170,7 +168,7 @@ export default function App() {
                 <div className={`absolute top-0 h-full ${layoutDirection === 'left' ? 'left-0' : 'right-0'}`} style={{ width: '62%', background: isGradient ? `linear-gradient(${gradientDirection}, ${primaryColor}, ${secondaryColor})` : primaryColor, clipPath: currentCuts[cutStyle], zIndex: 5 }}></div>
                 <div className={`absolute inset-0 flex z-10 p-10 text-white ${layoutDirection === 'left' ? 'text-left items-start' : 'text-right items-end flex-row-reverse w-full'}`}>
                    <div className="w-[60%] h-full flex flex-col justify-center">
-                      <h2 className={`font-medium leading-none mb-4 ${previewMode==='mobile'?'text-4xl':'text-4xl'}`}>{headlineMain} <br/><span className="italic font-light opacity-80">{headlineHighlight}</span></h2>
+                      <h2 className={`font-medium leading-none mb-4 text-4xl`}>{headlineMain} <br/><span className="italic font-light opacity-80">{headlineHighlight}</span></h2>
                       <div className="flex items-center gap-4">
                          <span className={`font-bold leading-none ${previewMode==='mobile'?'text-8xl':'text-7xl'}`}>{discountValue}</span>
                          {showPercentOff && <div className="text-left font-bold"><div className="text-2xl leading-none">%</div><div className="text-[10px]">OFF</div></div>}
